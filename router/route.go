@@ -18,5 +18,7 @@ func SetupRoutes(app *fiber.App) {
 	user.Put("/:id", handler.UpdateUser)
 	user.Delete("/:id", handler.DeleteUserByID)
 
-	api.Get("/", handler.getTransactions)
+	transaction := api.Group("/transaction")
+	transaction.Get("/", handler.GetTransactions)
+	transaction.Get("/:id", handler.GetTransactionsDetails)
 }
