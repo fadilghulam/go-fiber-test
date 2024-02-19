@@ -10,6 +10,7 @@ func SetupRoutes(app *fiber.App) {
 	// grouping
 	api := app.Group("/api")
 
+	api.Get("/testParam", handler.GetParam)
 	// users
 	user := api.Group("/user")
 	user.Get("/", handler.GetAllUsers)
@@ -20,5 +21,5 @@ func SetupRoutes(app *fiber.App) {
 
 	transaction := api.Group("/transaction")
 	transaction.Get("/", handler.GetTransactions)
-	transaction.Get("/:id", handler.GetTransactionsDetails)
+	transaction.Get("/detailsBy", handler.GetTransactionDetailsBy)
 }

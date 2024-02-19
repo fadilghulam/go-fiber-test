@@ -106,3 +106,107 @@ func GetTransactionsDetails(c *fiber.Ctx) error {
 	// Return the result
 	return c.Status(200).JSON(fiber.Map{"status": "success", "message": "Transactions Found", "data": result, "data_detail": resultDetail})
 }
+
+func GetTransactionDetailsBy(c *fiber.Ctx) error {
+	db := database.DB.Db
+
+	idStr := c.Query("id")
+	branchIDsBytes := c.Request().URI().QueryArgs().PeekMulti("id[]")
+
+	var ids []int
+	if idStr == "" {
+		ids = dto.ConvertParam(branchIDsBytes)
+	} else {
+		idValues := strings.Split(idStr, ",")
+		for _, idValue := range idValues {
+			idInt, _ := strconv.Atoi(idValue)
+			ids = append(ids, idInt)
+		}
+	}
+
+	query := "SELECT * FROM transaction_sale ts"
+	queryDetail := "SELECT * FROM transaction_sale_detail tsd"
+	if len(ids) > 0 {
+		idStr := strconv.Itoa(ids[0])
+
+		for i := 1; i < len(ids); i++ {
+			idStr += "," + strconv.Itoa(ids[i])
+		}
+		if len(ids) >= 1 && ids[0] != 0 {
+			query += fmt.Sprintf(" WHERE ts.id IN (%s)", idStr)
+			queryDetail += fmt.Sprintf(" WHERE tsd.transaction_id IN (%s)", idStr)
+		}
+	}
+
+	// find all transaction in the database
+	rows, err := db.Raw(query).Rows()
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	// Check if no rows were returned
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "Transactions not found", "data": nil})
+	}
+
+	// Reset rows to the beginning
+	rows.Close()
+	rows, err = db.Raw(query).Rows()
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	rows2, err := db.Raw(queryDetail).Rows()
+	if err != nil {
+		return err
+	}
+	defer rows2.Close()
+
+	var result []map[string]interface{}
+	// Iterate over rows and scan into map
+	for rows.Next() {
+		var values = make(map[string]interface{})
+		if err := db.ScanRows(rows, &values); err != nil {
+			return err
+		}
+		result = append(result, values)
+	}
+
+	var resultDetail []map[string]interface{}
+	// Iterate over rows and scan into map
+	for rows2.Next() {
+		var values = make(map[string]interface{})
+		if err := db.ScanRows(rows2, &values); err != nil {
+			return err
+		}
+		resultDetail = append(resultDetail, values)
+	}
+
+	// Return the result
+	return c.Status(200).JSON(fiber.Map{"status": "success", "message": "Transactions Found", "data": result, "data_detail": resultDetail})
+}
+
+func GetParam(c *fiber.Ctx) error {
+	// db := database.DB.Db
+
+	idStr := c.Query("id")
+	branchIDsBytes := c.Request().URI().QueryArgs().PeekMulti("id[]")
+
+	var ids []int
+	if idStr == "" {
+		ids = dto.ConvertParam(branchIDsBytes)
+	} else {
+		idValues := strings.Split(idStr, ",")
+		for _, idValue := range idValues {
+			idInt, _ := strconv.Atoi(idValue)
+			ids = append(ids, idInt)
+		}
+	}
+
+	return c.Status(200).JSON(fiber.Map{"status": "success", "message": "Success", "data": ids})
+}
